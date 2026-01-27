@@ -4,14 +4,17 @@
 
 一套完整的企业级AI赋能需求处理流程，能够将用户简单的一句话需求转化为标准化的PRD文档和界面设计方案。
 
+**基于 Anthropic Claude 构建，使用 LangChain 和 LangGraph 框架。**
+
 ### 核心特性
 
-✅ **智能需求澄清**：将模糊的需求想法转化为结构化摘要  
-✅ **多模板PRD生成**：支持5种需求类型的PRD模板（功能型/优化型/策略型/数据型/增长型）  
-✅ **原型设计辅助**：从PRD生成界面设计方案和AI绘图提示词  
-✅ **协同工作流**：三个Agent无缝协作，数据自动流转  
-✅ **灵活调用**：支持完整流程、单步执行、选择性执行  
+✅ **智能需求澄清**：将模糊的需求想法转化为结构化摘要
+✅ **多模板PRD生成**：支持5种需求类型的PRD模板（功能型/优化型/策略型/数据型/增长型）
+✅ **原型设计辅助**：从PRD生成界面设计方案和AI绘图提示词
+✅ **协同工作流**：三个Agent无缝协作，数据自动流转
+✅ **灵活调用**：支持完整流程、单步执行、选择性执行
 ✅ **对话记忆**：每个Agent独立维护对话历史
+✅ **Extended Thinking**：支持Claude的深度思考模式
 
 ### 工作流程
 
@@ -57,14 +60,30 @@
 
 确保已安装Python 3.8+和必要的依赖。
 
-### 2. 测试Agent构建
+```bash
+# 安装依赖
+pip install -r requirements.txt
+```
+
+### 2. 设置环境变量
 
 ```bash
-cd /workspace/projects
+# 设置工作目录路径
+export WORKSPACE_PATH=$(pwd)
 
+# 设置 Anthropic API Key
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+```
+
+**获取 API Key**：访问 [Anthropic Console](https://console.anthropic.com/) 创建 API Key
+
+### 3. 测试Agent构建
+
+```bash
 python -c "
 import os
-os.environ['COZE_WORKSPACE_PATH'] = '/workspace/projects'
+os.environ['WORKSPACE_PATH'] = '$(pwd)'
+os.environ['ANTHROPIC_API_KEY'] = 'your-api-key'
 
 from src.agents.agent1_requirement_clarifier import build_agent as build_agent1
 from src.agents.agent2_prd_builder import build_agent as build_agent2
@@ -78,7 +97,7 @@ print('✅ 所有Agent构建成功！')
 "
 ```
 
-### 3. 运行完整工作流
+### 4. 运行完整工作流
 
 ```python
 import asyncio
@@ -86,11 +105,13 @@ import os
 from src.agents.workflow_coordinator import run_requirement_workflow
 
 async def main():
-    os.environ['COZE_WORKSPACE_PATH'] = '/workspace/projects'
-    
+    # 设置环境变量
+    os.environ['WORKSPACE_PATH'] = '/path/to/project'
+    os.environ['ANTHROPIC_API_KEY'] = 'your-api-key'
+
     # 用户输入
     user_input = "我要开发一个用户登录功能，支持账号密码登录和手机验证码登录两种方式"
-    
+
     # 执行完整工作流
     results = await run_requirement_workflow(
         user_input=user_input,
@@ -205,10 +226,22 @@ result3 = await run_requirement_workflow(
 
 ## 🎨 技术栈
 
+- **Anthropic Claude**: 大语言模型（支持 Extended Thinking）
 - **LangChain**: Agent框架
 - **LangGraph**: 状态管理和工作流编排
-- **Doubao Seed**: 大语言模型（思考模型）
 - **Python 3.8+**: 编程语言
+- **PostgreSQL**: 对话历史存储（可选）
+
+## 🔧 模型选择
+
+系统支持多种 Claude 模型，可在配置文件中修改：
+
+| 模型 | 特点 | 适用场景 |
+|------|------|---------|
+| claude-opus-4 | 最强推理能力 | 复杂任务，需要深度思考 |
+| claude-sonnet-4-5 | 平衡性能和成本（默认） | 大多数任务 |
+| claude-sonnet-4 | 较快速度 | 简单任务 |
+| claude-haiku-4 | 最快速度 | 简单、快速响应任务 |
 
 ## 📝 测试
 
@@ -234,7 +267,7 @@ python tests/test_complete_workflow.py
 ```json
 {
     "config": {
-        "model": "doubao-seed-1-6-thinking-250715",
+        "model": "claude-sonnet-4-5",
         "temperature": 0.7,
         "top_p": 0.9,
         "max_completion_tokens": 8000,
@@ -246,13 +279,19 @@ python tests/test_complete_workflow.py
 ```
 
 **配置项说明**：
-- `model`: 使用的模型ID
+- `model`: 使用的模型ID（如 claude-sonnet-4-5）
 - `temperature`: 输出的随机性（0-2）
 - `top_p`: 核采样参数（0-1）
 - `max_completion_tokens`: 最大输出token数
 - `timeout`: 请求超时时间（秒）
-- `thinking`: 是否开启思考模式
+- `thinking`: 是否开启 Extended Thinking 模式（"enabled"/"disabled"）
 - `sp`: System Prompt（角色定义和任务目标）
+
+## 📚 文档
+
+- [使用文档](docs/USAGE.md) - 详细使用说明
+- [迁移指南](docs/MIGRATION_TO_CLAUDE.md) - 从扣子平台迁移到 Claude 的完整指南
+- [CLAUDE.md](CLAUDE.md) - 给 Claude Code 的项目指南
 
 ## 🤝 贡献指南
 
@@ -262,13 +301,18 @@ python tests/test_complete_workflow.py
 
 MIT License
 
-## 👥 团队
+## 👥 关于
 
-本项目由Coze Coding搭建，采用LangChain和LangGraph框架。
+本项目原基于扣子（Coze）平台搭建，现已迁移至 Anthropic Claude。
 
-## 📧 联系方式
+采用 LangChain 和 LangGraph 框架，支持灵活的工作流编排和状态管理。
 
-如有问题或建议，请提交Issue。
+## 📧 支持
+
+如有问题或建议：
+- 查阅 [迁移指南](docs/MIGRATION_TO_CLAUDE.md)
+- 提交 Issue
+- 查看 [Anthropic 文档](https://docs.anthropic.com/)
 
 ---
 

@@ -1,0 +1,9 @@
+飞书MCP Server 地址
+https://project.feishu.cn/mcp_server/v1?mcpKey=m-e468e82b-0313-445b-bf87-f0e3f9a5723f&projectKey=662ef8e0b2b6c06ce1ef28db&userKey=7371651783610875905
+
+project_key:
+662ef8e0b2b6c06ce1ef28db
+
+https://project.feishu.cn/hardwaretest/storyView/8SReqkNvg
+
+https://project.feishu.cn/hardwaretest/story/homepage?tabId=p_KczHbcPd
