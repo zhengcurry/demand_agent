@@ -52,3 +52,8 @@ tmp/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Test generated outputs
+test_calculator_api/
+test_output.log
+nul
