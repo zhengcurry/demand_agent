@@ -1,7 +1,3 @@
-import psycopg
-from psycopg_pool import AsyncConnectionPool
-from langgraph.checkpoint.postgres import PostgresSaver
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from typing import Optional, Union
@@ -19,8 +15,8 @@ class MemoryManager:
     """Memory Manager 单例类"""
 
     _instance: Optional['MemoryManager'] = None
-    _checkpointer: Optional[Union[AsyncPostgresSaver, MemorySaver]] = None
-    _pool: Optional[AsyncConnectionPool] = None
+    _checkpointer: Optional[BaseCheckpointSaver] = None
+    _pool: Optional[object] = None
     _setup_done: bool = False
 
     def __new__(cls):
@@ -28,8 +24,14 @@ class MemoryManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def _connect_with_retry(self, db_url: str) -> Optional[psycopg.Connection]:
+    def _connect_with_retry(self, db_url: str) -> Optional[object]:
         """带重试的数据库连接，每次 15 秒超时，共尝试 2 次"""
+        try:
+            import psycopg
+        except ImportError:
+            logger.warning("psycopg not installed, will fallback to MemorySaver")
+            return None
+            
         last_error = None
         for attempt in range(1, DB_MAX_RETRIES + 1):
             try:
@@ -49,6 +51,12 @@ class MemoryManager:
         """同步创建 schema 和表（只执行一次），返回是否成功"""
         if self._setup_done:
             return True
+
+        try:
+            from langgraph.checkpoint.postgres import PostgresSaver
+        except ImportError:
+            logger.warning("PostgresSaver not available, will fallback to MemorySaver")
+            return False
 
         conn = self._connect_with_retry(db_url)
         if conn is None:
@@ -109,6 +117,9 @@ class MemoryManager:
 
         # 4. 尝试创建连接池和 checkpointer
         try:
+            from psycopg_pool import AsyncConnectionPool
+            from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+            
             self._pool = AsyncConnectionPool(
                 conninfo=db_url,
                 timeout=DB_CONNECTION_TIMEOUT,
