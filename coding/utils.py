@@ -71,7 +71,7 @@ def print_safe(text: str, **kwargs):
 
 def clean_json_response(content: str) -> str:
     """
-    Clean JSON response by removing markdown code blocks
+    Clean JSON response by removing markdown code blocks and extra text
 
     Args:
         content: Raw response content that may contain markdown
@@ -90,12 +90,22 @@ def clean_json_response(content: str) -> str:
     if content.endswith("```"):
         content = content[:-3]
 
+    content = content.strip()
+
+    # Try to find JSON object boundaries
+    # Look for the first { and last }
+    start_idx = content.find('{')
+    end_idx = content.rfind('}')
+
+    if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+        content = content[start_idx:end_idx + 1]
+
     return content.strip()
 
 
 def parse_json_response(content: str) -> dict:
     """
-    Parse JSON response, handling markdown code blocks
+    Parse JSON response, handling markdown code blocks and extra text
 
     Args:
         content: Raw response content
@@ -107,4 +117,18 @@ def parse_json_response(content: str) -> dict:
         json.JSONDecodeError: If JSON parsing fails
     """
     cleaned = clean_json_response(content)
-    return json.loads(cleaned)
+
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError as e:
+        # Try to provide more helpful error information
+        error_pos = e.pos if hasattr(e, 'pos') else 0
+        context_start = max(0, error_pos - 100)
+        context_end = min(len(cleaned), error_pos + 100)
+        context = cleaned[context_start:context_end]
+
+        raise json.JSONDecodeError(
+            f"{e.msg}. Context around error: ...{context}...",
+            e.doc,
+            e.pos
+        )

@@ -79,16 +79,24 @@ Order tasks by dependencies and priority. Respond with ONLY the JSON, no additio
         try:
             response = self.client.messages.create(
                 model=self.model,
-                max_tokens=8000,
+                max_tokens=16000,  # Increased for complex projects
                 temperature=self.temperature,
                 messages=[{"role": "user", "content": prompt}]
             )
 
             content = response.content[0].text
+
+            # Save raw response for debugging
+            raw_response = content
+
             result = parse_json_response(content)
             return {"success": True, "task_plan": result}
         except json.JSONDecodeError as e:
-            return {"success": False, "error": f"Failed to parse JSON: {str(e)}", "raw_response": content}
+            return {
+                "success": False,
+                "error": f"Failed to parse JSON: {str(e)}",
+                "raw_response": raw_response if 'raw_response' in locals() else content
+            }
         except Exception as e:
             return {"success": False, "error": str(e)}
 
