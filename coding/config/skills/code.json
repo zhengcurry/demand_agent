@@ -1,0 +1,19 @@
+{
+  "name": "code",
+  "description": "Complete workflow from requirement to code implementation",
+  "usage": "/code \"requirement description\" [--mode auto|semi-auto|manual] [--from-feishu URL] [--project-path PATH]",
+  "workflow": [
+    "Requirement Analysis",
+    "Architecture Design",
+    "API Design",
+    "Task Planning",
+    "Code Generation",
+    "Code Review"
+  ],
+  "outputs": [
+    "Generated source code files",
+    "Unit tests",
+    "Design documents",
+    "Code review report"
+  ]
+}

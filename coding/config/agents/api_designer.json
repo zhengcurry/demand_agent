@@ -1,0 +1,13 @@
+{
+  "name": "api_designer",
+  "model": "claude-sonnet-4-5-20250929",
+  "temperature": 0.2,
+  "max_tokens": 8000,
+  "description": "Designs API specifications in OpenAPI format",
+  "capabilities": [
+    "API design",
+    "OpenAPI specification",
+    "Endpoint definition",
+    "Schema design"
+  ]
+}

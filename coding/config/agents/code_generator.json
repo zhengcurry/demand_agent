@@ -1,0 +1,14 @@
+{
+  "name": "code_generator",
+  "model": "claude-sonnet-4-5-20250929",
+  "temperature": 0.3,
+  "max_tokens": 8000,
+  "description": "Generates production-ready code with tests",
+  "capabilities": [
+    "Code generation",
+    "Test generation",
+    "Error handling",
+    "Self-correction"
+  ],
+  "max_retries": 3
+}

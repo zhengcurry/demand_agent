@@ -1,0 +1,13 @@
+{
+  "name": "code_reviewer",
+  "model": "claude-opus-4-5-20251101",
+  "temperature": 0.2,
+  "max_tokens": 8000,
+  "description": "Reviews code for quality, security, and best practices",
+  "capabilities": [
+    "Code review",
+    "Security analysis",
+    "Performance analysis",
+    "Best practices validation"
+  ]
+}

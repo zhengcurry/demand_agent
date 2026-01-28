@@ -1,0 +1,74 @@
+{
+  "project": {
+    "name": "AI Development Toolkit",
+    "version": "1.0.0",
+    "description": "Universal AI-driven development toolkit"
+  },
+  "mcp_servers": {
+    "filesystem": {
+      "enabled": true,
+      "base_path": "."
+    },
+    "git": {
+      "enabled": true,
+      "repo_path": "."
+    },
+    "cli": {
+      "enabled": true,
+      "working_dir": "."
+    },
+    "feishu": {
+      "enabled": false,
+      "app_id": "",
+      "app_secret": ""
+    }
+  },
+  "agents": {
+    "requirement_analyst": {
+      "model": "claude-sonnet-4-5-20250929",
+      "temperature": 0.3,
+      "max_tokens": 4096
+    },
+    "system_architect": {
+      "model": "claude-opus-4-5-20251101",
+      "temperature": 0.4,
+      "max_tokens": 8000
+    },
+    "api_designer": {
+      "model": "claude-sonnet-4-5-20250929",
+      "temperature": 0.2,
+      "max_tokens": 8000
+    },
+    "task_planner": {
+      "model": "claude-sonnet-4-5-20250929",
+      "temperature": 0.5,
+      "max_tokens": 8000
+    },
+    "code_generator": {
+      "model": "claude-sonnet-4-5-20250929",
+      "temperature": 0.3,
+      "max_tokens": 8000,
+      "max_retries": 3
+    },
+    "code_reviewer": {
+      "model": "claude-opus-4-5-20251101",
+      "temperature": 0.2,
+      "max_tokens": 8000
+    }
+  },
+  "skills": {
+    "code": {
+      "enabled": true,
+      "default_mode": "auto"
+    },
+    "design": {
+      "enabled": true
+    },
+    "review": {
+      "enabled": true
+    },
+    "refactor": {
+      "enabled": true
+    }
+  }
+}

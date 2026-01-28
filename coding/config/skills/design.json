@@ -1,0 +1,15 @@
+{
+  "name": "design",
+  "description": "Design phase only (requirement analysis + architecture + API design)",
+  "usage": "/design \"requirement description\" [--project-path PATH]",
+  "workflow": [
+    "Requirement Analysis",
+    "Architecture Design",
+    "API Design"
+  ],
+  "outputs": [
+    "Requirement document",
+    "Architecture document",
+    "API specification (OpenAPI)"
+  ]
+}

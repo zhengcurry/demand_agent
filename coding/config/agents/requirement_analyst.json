@@ -1,0 +1,13 @@
+{
+  "name": "requirement_analyst",
+  "model": "claude-sonnet-4-5-20250929",
+  "temperature": 0.3,
+  "max_tokens": 4096,
+  "description": "Analyzes user requirements and converts them to structured format",
+  "capabilities": [
+    "Requirement analysis",
+    "Structured data extraction",
+    "Feature identification",
+    "Constraint analysis"
+  ]
+}

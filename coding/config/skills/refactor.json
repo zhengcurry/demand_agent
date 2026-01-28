@@ -1,0 +1,15 @@
+{
+  "name": "refactor",
+  "description": "Refactor existing code based on requirements or best practices",
+  "usage": "/refactor --files file1.py file2.py --goal \"refactoring goal\" [--project-path PATH]",
+  "workflow": [
+    "Code Analysis",
+    "Refactoring",
+    "Quick Review",
+    "File Update"
+  ],
+  "outputs": [
+    "Refactored code files",
+    "Refactoring summary"
+  ]
+}

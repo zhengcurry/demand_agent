@@ -1,0 +1,16 @@
+{
+  "name": "review",
+  "description": "Review existing code for quality, security, and best practices",
+  "usage": "/review [--files file1.py file2.py] [--requirement-path PATH] [--project-path PATH]",
+  "workflow": [
+    "Code Analysis",
+    "Security Review",
+    "Best Practices Check",
+    "Report Generation"
+  ],
+  "outputs": [
+    "Code review report",
+    "Issue list with severity",
+    "Recommendations"
+  ]
+}

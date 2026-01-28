@@ -1,0 +1,13 @@
+{
+  "name": "task_planner",
+  "model": "claude-sonnet-4-5-20250929",
+  "temperature": 0.5,
+  "max_tokens": 8000,
+  "description": "Breaks down projects into executable tasks",
+  "capabilities": [
+    "Task breakdown",
+    "Dependency management",
+    "Priority assignment",
+    "Complexity estimation"
+  ]
+}
