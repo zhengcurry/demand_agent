@@ -56,4 +56,5 @@ htmlcov/
 # Test generated outputs
 test_calculator_api/
 test_output.log
+generated_project/
 nul
