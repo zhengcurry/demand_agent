@@ -5,6 +5,10 @@ Breaks down architecture and requirements into executable tasks.
 import json
 from typing import Dict, Any, List
 from anthropic import Anthropic
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import parse_json_response
 
 
 class TaskPlanner:
@@ -81,7 +85,7 @@ Order tasks by dependencies and priority. Respond with ONLY the JSON, no additio
             )
 
             content = response.content[0].text
-            result = json.loads(content)
+            result = parse_json_response(content)
             return {"success": True, "task_plan": result}
         except json.JSONDecodeError as e:
             return {"success": False, "error": f"Failed to parse JSON: {str(e)}", "raw_response": content}

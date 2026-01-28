@@ -5,6 +5,10 @@ Reviews generated code for quality, security, and best practices.
 import json
 from typing import Dict, Any, List
 from anthropic import Anthropic
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import parse_json_response
 
 
 class CodeReviewer:
@@ -99,7 +103,7 @@ Respond with ONLY the JSON, no additional text."""
             )
 
             content = response.content[0].text
-            result = json.loads(content)
+            result = parse_json_response(content)
             return {"success": True, "review": result}
         except json.JSONDecodeError as e:
             return {"success": False, "error": f"Failed to parse JSON: {str(e)}", "raw_response": content}
@@ -138,7 +142,7 @@ Provide a brief review focusing on critical issues only. Respond in JSON format:
             )
 
             content = response.content[0].text
-            result = json.loads(content)
+            result = parse_json_response(content)
             return {"success": True, "review": result}
         except Exception as e:
             return {"success": False, "error": str(e)}

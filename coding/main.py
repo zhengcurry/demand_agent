@@ -11,6 +11,7 @@ from skills.code_skill import CodeSkill
 from skills.design_skill import DesignSkill
 from skills.review_skill import ReviewSkill
 from skills.refactor_skill import RefactorSkill
+from skills.enhanced_code_skill import EnhancedCodeSkill
 
 
 def main():
@@ -27,6 +28,16 @@ def main():
                             default="auto", help="Execution mode")
     code_parser.add_argument("--from-feishu", help="Feishu document URL")
     code_parser.add_argument("--project-path", default=".", help="Project path")
+
+    # /enhanced-code command (with stage reports and review checkpoints)
+    enhanced_parser = subparsers.add_parser("enhanced-code",
+                                           help="Enhanced code generation with stage reports and review checkpoints")
+    enhanced_parser.add_argument("requirement", help="Requirement description")
+    enhanced_parser.add_argument("--review-mode", choices=["auto", "manual"],
+                                default="auto", help="Review mode (auto/manual)")
+    enhanced_parser.add_argument("--pause-for-review", action="store_true",
+                                help="Pause after design stage for manual review")
+    enhanced_parser.add_argument("--project-path", default=".", help="Project path")
 
     # /design command
     design_parser = subparsers.add_parser("design", help="Create design documents")
@@ -60,6 +71,24 @@ def main():
             mode=args.mode,
             from_feishu=args.from_feishu
         )
+
+    elif args.command == "enhanced-code":
+        skill = EnhancedCodeSkill(api_key=api_key, project_path=args.project_path)
+        result = skill.execute(
+            requirement=args.requirement,
+            review_mode=args.review_mode,
+            pause_for_review=args.pause_for_review
+        )
+
+        # Special handling for paused status
+        if result.get("status") == "paused_for_review":
+            print("\n⏸️  Workflow paused for manual review")
+            print(f"\nCheckpoint saved at: {result['checkpoint_path']}")
+            print("\nNext steps:")
+            print("  1. Review the design documents in docs/")
+            print("  2. If approved, resume the workflow")
+            print("  3. If changes needed, modify and retry")
+            return
 
     elif args.command == "design":
         skill = DesignSkill(api_key=api_key, project_path=args.project_path)

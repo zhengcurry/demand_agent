@@ -5,6 +5,10 @@ Analyzes user requirements and converts them to structured format.
 import json
 from typing import Dict, Any, Optional
 from anthropic import Anthropic
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+from utils import parse_json_response
 
 
 class RequirementAnalyst:
@@ -72,7 +76,7 @@ Respond with ONLY the JSON, no additional text."""
             )
 
             content = response.content[0].text
-            result = json.loads(content)
+            result = parse_json_response(content)
             return {"success": True, "requirement": result}
         except json.JSONDecodeError as e:
             return {"success": False, "error": f"Failed to parse JSON: {str(e)}", "raw_response": content}

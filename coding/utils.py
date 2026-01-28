@@ -3,6 +3,7 @@ Safe print utility for Windows console
 Handles emoji and Unicode characters that may cause encoding issues
 """
 import sys
+import json
 
 
 def safe_print(text: str, **kwargs):
@@ -66,3 +67,44 @@ def print_safe(text: str, **kwargs):
     """
     safe_text = format_text(text)
     print(safe_text, **kwargs)
+
+
+def clean_json_response(content: str) -> str:
+    """
+    Clean JSON response by removing markdown code blocks
+
+    Args:
+        content: Raw response content that may contain markdown
+
+    Returns:
+        Cleaned JSON string
+    """
+    content = content.strip()
+
+    # Remove markdown code blocks
+    if content.startswith("```json"):
+        content = content[7:]
+    elif content.startswith("```"):
+        content = content[3:]
+
+    if content.endswith("```"):
+        content = content[:-3]
+
+    return content.strip()
+
+
+def parse_json_response(content: str) -> dict:
+    """
+    Parse JSON response, handling markdown code blocks
+
+    Args:
+        content: Raw response content
+
+    Returns:
+        Parsed JSON dict
+
+    Raises:
+        json.JSONDecodeError: If JSON parsing fails
+    """
+    cleaned = clean_json_response(content)
+    return json.loads(cleaned)
