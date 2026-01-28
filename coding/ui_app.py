@@ -12,6 +12,7 @@ sys.path.append(str(Path(__file__).parent))
 
 from env_config import get_api_key
 from skills.enhanced_code_skill import EnhancedCodeSkill
+from skills.self_healing_skill import SelfHealingSkill
 from utils import print_safe
 
 
@@ -78,6 +79,24 @@ def main():
             value=False,
             help="Pause after design stage for manual review"
         )
+
+        # Self-healing mode
+        st.markdown("---")
+        st.markdown("### 🔧 Self-Healing")
+        enable_self_healing = st.checkbox(
+            "Enable Self-Healing",
+            value=True,
+            help="Automatically retry and fix errors"
+        )
+
+        if enable_self_healing:
+            max_retries = st.slider(
+                "Max Retries per Stage",
+                min_value=1,
+                max_value=5,
+                value=3,
+                help="Maximum retry attempts for each stage"
+            )
 
         st.markdown("---")
         st.markdown("### About")
@@ -156,9 +175,17 @@ def main():
             if result.get("success"):
                 st.success("✅ Workflow completed successfully!")
                 st.metric("Final Score", f"{result.get('final_score', 0)}/100")
-                st.metric("Generated Files", result.get('generated_files', 0))
+                st.metric("Generated Files", len(result.get('generated_files', [])))
+
+                # Show fix summary if available
+                if result.get("fix_summary"):
+                    st.info(f"🔧 {result.get('fix_summary')}")
             else:
                 st.error(f"❌ Workflow failed: {result.get('error', 'Unknown error')}")
+
+                # Show fix summary even on failure
+                if result.get("fix_summary"):
+                    st.warning(f"🔧 {result.get('fix_summary')}")
         else:
             st.info("⏳ Ready to start")
 
@@ -183,16 +210,25 @@ def main():
 
         try:
             with st.spinner("Initializing workflow..."):
-                add_status_message("🚀 Starting Enhanced Code Skill workflow...")
-                add_status_message(f"📁 Project directory: {project_path}")
-                add_status_message(f"⚙️ Review mode: {review_mode}")
+                add_status_message("[START] Starting Code Generation Workflow...")
+                add_status_message(f"[INFO] Project directory: {project_path}")
+                add_status_message(f"[INFO] Review mode: {review_mode}")
 
-                # Initialize skill
-                skill = EnhancedCodeSkill(
-                    api_key=api_key,
-                    project_path=project_path
-                )
-                add_status_message("✅ Enhanced Code Skill initialized")
+                # Initialize skill (with or without self-healing)
+                if enable_self_healing:
+                    add_status_message(f"[INFO] Self-healing enabled (max retries: {max_retries})")
+                    skill = SelfHealingSkill(
+                        api_key=api_key,
+                        project_path=project_path,
+                        max_retries=max_retries
+                    )
+                else:
+                    add_status_message("[INFO] Self-healing disabled")
+                    skill = EnhancedCodeSkill(
+                        api_key=api_key,
+                        project_path=project_path
+                    )
+                add_status_message("[OK] Skill initialized")
 
                 # Execute workflow
                 add_status_message("\n" + "="*70)
@@ -209,12 +245,22 @@ def main():
                 st.session_state.workflow_running = False
 
                 if result.get("success"):
-                    add_status_message("\n✅ Workflow completed successfully!")
-                    add_status_message(f"📊 Final Score: {result.get('final_score')}/100")
-                    add_status_message(f"📁 Generated Files: {len(result.get('generated_files', []))}")
-                    add_status_message(f"📄 Reports saved in: {project_path}/docs/")
+                    add_status_message("\n[SUCCESS] Workflow completed successfully!")
+                    add_status_message(f"[INFO] Final Score: {result.get('final_score')}/100")
+                    add_status_message(f"[INFO] Generated Files: {len(result.get('generated_files', []))}")
+                    add_status_message(f"[INFO] Reports saved in: {project_path}/docs/")
+
+                    # Show fix summary if available
+                    if result.get("fix_summary"):
+                        add_status_message(f"\n[FIX] {result.get('fix_summary')}")
+                        add_status_message(f"[FIX] Fix log: {result.get('fix_log_path')}")
                 else:
-                    add_status_message(f"\n❌ Workflow failed: {result.get('error')}")
+                    add_status_message(f"\n[ERROR] Workflow failed: {result.get('error')}")
+
+                    # Show fix summary even on failure
+                    if result.get("fix_summary"):
+                        add_status_message(f"\n[FIX] {result.get('fix_summary')}")
+                        add_status_message(f"[FIX] Fix log: {result.get('fix_log_path')}")
 
         except Exception as e:
             st.session_state.workflow_running = False
