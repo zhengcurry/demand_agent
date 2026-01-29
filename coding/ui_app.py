@@ -6,6 +6,8 @@ import streamlit as st
 import os
 from pathlib import Path
 import sys
+import io
+from contextlib import redirect_stdout
 
 # Add current directory to path
 sys.path.append(str(Path(__file__).parent))
@@ -29,6 +31,25 @@ def init_session_state():
 def add_status_message(message: str):
     """Add a status message to the display"""
     st.session_state.status_messages.append(message)
+
+
+class StreamlitOutputCapture(io.StringIO):
+    """Capture stdout and redirect to Streamlit status messages"""
+    def __init__(self, status_placeholder=None):
+        super().__init__()
+        self.status_placeholder = status_placeholder
+        self.buffer = []
+
+    def write(self, text):
+        if text and text.strip():
+            # Add to session state messages
+            st.session_state.status_messages.append(text.strip())
+            self.buffer.append(text.strip())
+
+            # Update placeholder if available
+            if self.status_placeholder:
+                self.status_placeholder.text("\n".join(st.session_state.status_messages[-10:]))
+        return len(text)
 
 
 def main():
@@ -174,8 +195,34 @@ def main():
             result = st.session_state.workflow_result
             if result.get("success"):
                 st.success("✅ Workflow completed successfully!")
-                st.metric("Final Score", f"{result.get('final_score', 0)}/100")
-                st.metric("Generated Files", len(result.get('generated_files', [])))
+
+                # Display metrics in columns
+                metric_col1, metric_col2 = st.columns(2)
+                with metric_col1:
+                    st.metric("Final Score", f"{result.get('final_score', 0)}/100")
+                with metric_col2:
+                    st.metric("Generated Files", len(result.get('generated_files', [])))
+
+                # Display token usage if available
+                if "token_usage" in result:
+                    tokens = result["token_usage"]
+                    st.markdown("---")
+                    st.markdown("**🔢 Token Usage**")
+
+                    token_col1, token_col2, token_col3 = st.columns(3)
+                    with token_col1:
+                        st.metric("Input", f"{tokens.get('input_tokens', 0):,}")
+                    with token_col2:
+                        st.metric("Output", f"{tokens.get('output_tokens', 0):,}")
+                    with token_col3:
+                        st.metric("Total", f"{tokens.get('total_tokens', 0):,}")
+
+                    # Calculate estimated cost (approximate)
+                    # Claude Sonnet 4.5: $3/MTok input, $15/MTok output
+                    input_cost = tokens.get('input_tokens', 0) * 3 / 1_000_000
+                    output_cost = tokens.get('output_tokens', 0) * 15 / 1_000_000
+                    total_cost = input_cost + output_cost
+                    st.caption(f"💰 Estimated cost: ${total_cost:.4f}")
 
                 # Show fix summary if available
                 if result.get("fix_summary"):
@@ -209,58 +256,61 @@ def main():
         status_placeholder = st.empty()
 
         try:
-            with st.spinner("Initializing workflow..."):
-                add_status_message("[START] Starting Code Generation Workflow...")
-                add_status_message(f"[INFO] Project directory: {project_path}")
-                add_status_message(f"[INFO] Review mode: {review_mode}")
+            add_status_message("[START] Starting Code Generation Workflow...")
+            add_status_message(f"[INFO] Project directory: {project_path}")
+            add_status_message(f"[INFO] Review mode: {review_mode}")
 
-                # Initialize skill (with or without self-healing)
-                if enable_self_healing:
-                    add_status_message(f"[INFO] Self-healing enabled (max retries: {max_retries})")
-                    skill = SelfHealingSkill(
-                        api_key=api_key,
-                        project_path=project_path,
-                        max_retries=max_retries
-                    )
-                else:
-                    add_status_message("[INFO] Self-healing disabled")
-                    skill = EnhancedCodeSkill(
-                        api_key=api_key,
-                        project_path=project_path
-                    )
-                add_status_message("[OK] Skill initialized")
+            # Initialize skill (with or without self-healing)
+            if enable_self_healing:
+                add_status_message(f"[INFO] Self-healing enabled (max retries: {max_retries})")
+                skill = SelfHealingSkill(
+                    api_key=api_key,
+                    project_path=project_path,
+                    max_retries=max_retries
+                )
+            else:
+                add_status_message("[INFO] Self-healing disabled")
+                skill = EnhancedCodeSkill(
+                    api_key=api_key,
+                    project_path=project_path
+                )
+            add_status_message("[OK] Skill initialized")
 
-                # Execute workflow
-                add_status_message("\n" + "="*70)
-                add_status_message("Starting 6-stage workflow...")
-                add_status_message("="*70)
+            # Execute workflow with stdout capture
+            add_status_message("\n" + "="*70)
+            add_status_message("Starting 6-stage workflow...")
+            add_status_message("="*70)
 
+            # Capture stdout to show progress in UI
+            output_capture = StreamlitOutputCapture(status_placeholder)
+
+            with redirect_stdout(output_capture):
                 result = skill.execute(
                     requirement=requirement_text,
                     review_mode=review_mode,
                     pause_for_review=pause_for_review
                 )
 
-                st.session_state.workflow_result = result
-                st.session_state.workflow_running = False
+            st.session_state.workflow_result = result
+            st.session_state.workflow_running = False
 
-                if result.get("success"):
-                    add_status_message("\n[SUCCESS] Workflow completed successfully!")
-                    add_status_message(f"[INFO] Final Score: {result.get('final_score')}/100")
-                    add_status_message(f"[INFO] Generated Files: {len(result.get('generated_files', []))}")
-                    add_status_message(f"[INFO] Reports saved in: {project_path}/docs/")
+            if result.get("success"):
+                add_status_message("\n[SUCCESS] Workflow completed successfully!")
+                add_status_message(f"[INFO] Final Score: {result.get('final_score')}/100")
+                add_status_message(f"[INFO] Generated Files: {len(result.get('generated_files', []))}")
+                add_status_message(f"[INFO] Reports saved in: {project_path}/docs/")
 
-                    # Show fix summary if available
-                    if result.get("fix_summary"):
-                        add_status_message(f"\n[FIX] {result.get('fix_summary')}")
-                        add_status_message(f"[FIX] Fix log: {result.get('fix_log_path')}")
-                else:
-                    add_status_message(f"\n[ERROR] Workflow failed: {result.get('error')}")
+                # Show fix summary if available
+                if result.get("fix_summary"):
+                    add_status_message(f"\n[FIX] {result.get('fix_summary')}")
+                    add_status_message(f"[FIX] Fix log: {result.get('fix_log_path')}")
+            else:
+                add_status_message(f"\n[ERROR] Workflow failed: {result.get('error')}")
 
-                    # Show fix summary even on failure
-                    if result.get("fix_summary"):
-                        add_status_message(f"\n[FIX] {result.get('fix_summary')}")
-                        add_status_message(f"[FIX] Fix log: {result.get('fix_log_path')}")
+                # Show fix summary even on failure
+                if result.get("fix_summary"):
+                    add_status_message(f"\n[FIX] {result.get('fix_summary')}")
+                    add_status_message(f"[FIX] Fix log: {result.get('fix_log_path')}")
 
         except Exception as e:
             st.session_state.workflow_running = False

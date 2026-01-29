@@ -145,12 +145,16 @@ class EnhancedCodeSkill:
             print_safe("=" * 70)
             self._print_summary()
 
+            # Calculate total token usage
+            total_tokens = self._calculate_total_tokens()
+
             return {
                 "success": True,
                 "status": "completed",
                 "reports": self.workflow_state["reports"],
                 "generated_files": stage5_result["data"]["generated_files"],
-                "final_score": stage6_result["data"]["review"]["overall_score"]
+                "final_score": stage6_result["data"]["review"]["overall_score"],
+                "token_usage": total_tokens
             }
 
         except Exception as e:
@@ -205,7 +209,7 @@ class EnhancedCodeSkill:
             return {"success": False, "error": f"Stage 1 failed: {str(e)}"}
 
     def _stage2_design(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Stage 2: Architecture and API Design"""
+        """Stage 2: Architecture and API Design (API design is optional)"""
         self.workflow_state["current_stage"] = "stage2_design"
 
         print_safe("\n" + "=" * 70)
@@ -215,19 +219,38 @@ class EnhancedCodeSkill:
         try:
             requirement = context["requirement"]
 
-            # Architecture Design
+            # Check if API design is needed
+            needs_api = requirement.get("needs_api", True)  # Default to True for backward compatibility
+
+            if needs_api:
+                print_safe(f"\n  ℹ️  API design: Required ({requirement.get('api_rationale', 'Backend/API service')})")
+            else:
+                print_safe(f"\n  ℹ️  API design: Not needed ({requirement.get('api_rationale', 'Standalone application')})")
+
+            # Architecture Design (always required)
             print_safe("\n  [2.1] Designing architecture...")
             arch_result = self.system_architect.design(requirement)
             if not arch_result.get("success"):
                 return {"success": False, "error": "Architecture design failed", "details": arch_result}
             print_safe("  ✅ Architecture designed")
 
-            # API Design
-            print_safe("\n  [2.2] Designing API...")
-            api_result = self.api_designer.design(requirement, arch_result["architecture"])
-            if not api_result.get("success"):
-                return {"success": False, "error": "API design failed", "details": api_result}
-            print_safe("  ✅ API designed")
+            # API Design (conditional)
+            api_result = None
+            if needs_api:
+                print_safe("\n  [2.2] Designing API...")
+                api_result = self.api_designer.design(requirement, arch_result["architecture"])
+                if not api_result.get("success"):
+                    return {"success": False, "error": "API design failed", "details": api_result}
+
+                # Display token usage if available
+                if "token_usage" in api_result:
+                    token_info = api_result["token_usage"]
+                    print_safe(f"  ✅ API designed ({api_result.get('format', 'unknown').upper()} format)")
+                    print_safe(f"     Tokens: {token_info['input_tokens']} input + {token_info['output_tokens']} output = {token_info['total_tokens']} total")
+                else:
+                    print_safe("  ✅ API designed")
+            else:
+                print_safe("\n  [2.2] Skipping API design (not needed for this project type)")
 
             # Generate stage report
             report = {
@@ -235,10 +258,13 @@ class EnhancedCodeSkill:
                 "status": "completed",
                 "timestamp": datetime.now().isoformat(),
                 "architecture": arch_result["architecture"],
-                "api_spec": api_result["api_spec"],
+                "api_spec": api_result["api_spec"] if api_result else None,
+                "token_usage": api_result.get("token_usage", {}) if api_result else {},
+                "api_format": api_result.get("format", "none") if api_result else "none",
+                "needs_api": needs_api,
                 "summary": {
                     "components": len(arch_result["architecture"].get("tech_stack", {}).get("backend", [])),
-                    "endpoints": len(api_result["api_spec"].get("paths", {})),
+                    "endpoints": len(api_result["api_spec"].get("paths", {})) if api_result else 0,
                     "data_models": len(arch_result["architecture"].get("data_model", []))
                 }
             }
@@ -673,7 +699,19 @@ class EnhancedCodeSkill:
 
         if "stage2_design" in reports:
             design = reports["stage2_design"]["summary"]
-            print_safe(f"   🏗️  Design: {design['components']} components, {design['endpoints']} endpoints")
+            needs_api = reports["stage2_design"].get("needs_api", True)
+
+            if needs_api:
+                print_safe(f"   🏗️  Design: {design['components']} components, {design['endpoints']} API endpoints")
+
+                # Display token usage for API design
+                if "token_usage" in reports["stage2_design"] and reports["stage2_design"]["token_usage"]:
+                    tokens = reports["stage2_design"]["token_usage"]
+                    api_format = reports["stage2_design"].get("api_format", "unknown")
+                    if api_format != "none":
+                        print_safe(f"      API Format: {api_format.upper()}, Tokens: {tokens.get('total_tokens', 0)}")
+            else:
+                print_safe(f"   🏗️  Design: {design['components']} components (No API needed)")
 
         if "stage3_design_review" in reports:
             review = reports["stage3_design_review"]["summary"]
@@ -690,5 +728,31 @@ class EnhancedCodeSkill:
         if "stage6_code_review" in reports:
             review = reports["stage6_code_review"]["summary"]
             print_safe(f"   ✅ Code Review: {review['overall_score']}/100 ({review['quality_level']})")
+
+        # Display total token usage
+        total_tokens = self._calculate_total_tokens()
+        if total_tokens.get("total_tokens", 0) > 0:
+            print_safe(f"\n   🔢 Total Token Usage: {total_tokens['total_tokens']:,} tokens")
+            print_safe(f"      Input: {total_tokens['input_tokens']:,}, Output: {total_tokens['output_tokens']:,}")
+
+    def _calculate_total_tokens(self):
+        """Calculate total token usage across all stages"""
+        total_input = 0
+        total_output = 0
+
+        reports = self.workflow_state.get("reports", {})
+
+        # Aggregate token usage from all stages
+        for stage_name, report in reports.items():
+            if "token_usage" in report:
+                tokens = report["token_usage"]
+                total_input += tokens.get("input_tokens", 0)
+                total_output += tokens.get("output_tokens", 0)
+
+        return {
+            "input_tokens": total_input,
+            "output_tokens": total_output,
+            "total_tokens": total_input + total_output
+        }
 
         print_safe(f"\n   📄 Reports saved in: {self.project_path / 'docs'}")

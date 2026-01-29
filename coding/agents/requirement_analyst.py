@@ -46,7 +46,9 @@ Please provide a structured analysis in the following JSON format:
 {{
     "title": "Brief title of the requirement",
     "description": "Detailed description",
-    "type": "web|mobile|backend|desktop|other",
+    "type": "web|mobile|backend|desktop|cli|library|other",
+    "needs_api": true|false,
+    "api_rationale": "Explanation of why API is or isn't needed",
     "features": [
         {{
             "name": "Feature name",
@@ -64,6 +66,17 @@ Please provide a structured analysis in the following JSON format:
         "List of success criteria"
     ]
 }}
+
+IMPORTANT: Set "needs_api" based on these guidelines:
+- Web backend/API service: needs_api = true
+- Mobile app with backend: needs_api = true
+- Web app with backend API: needs_api = true
+- Microservices: needs_api = true
+- Desktop application (standalone): needs_api = false
+- Command-line tool: needs_api = false
+- Library/SDK: needs_api = false (has programming interface, not REST API)
+- Frontend-only web app (no backend): needs_api = false
+- Script/automation tool: needs_api = false
 
 Respond with ONLY the JSON, no additional text."""
 
